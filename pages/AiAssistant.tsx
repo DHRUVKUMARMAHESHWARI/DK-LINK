@@ -138,7 +138,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ contextData, userId }) => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about your links, schedule, or for advice..."
-          className="flex-1 p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 bg-white/80"
+          className="flex-1 p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 bg-white/80 text-slate-800 placeholder:text-slate-400"
           disabled={isLoading}
         />
         <button 

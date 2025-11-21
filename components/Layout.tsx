@@ -13,7 +13,8 @@ import {
   Bell,
   ArrowRight,
   Database,
-  Trash
+  Settings,
+  Command
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -42,14 +43,15 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 }) => (
   <button
     onClick={onClick}
-    className={`flex items-center w-full p-3 mb-2 rounded-xl transition-all duration-200 ${
+    className={`flex items-center w-full p-3 mb-2 rounded-xl transition-all duration-300 font-medium relative overflow-hidden group ${
       active 
-        ? 'bg-white/80 text-indigo-600 shadow-md' 
-        : 'hover:bg-white/40 text-slate-600 hover:text-slate-800'
+        ? 'bg-white text-indigo-600 shadow-lg shadow-indigo-100' 
+        : 'hover:bg-white/50 text-slate-600 hover:text-slate-900'
     }`}
   >
-    <Icon size={20} className="mr-3" />
-    <span className="font-medium">{label}</span>
+    {active && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full"></div>}
+    <Icon size={20} className={`mr-3 transition-transform group-hover:scale-110 ${active ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
+    <span className="relative z-10">{label}</span>
   </button>
 );
 
@@ -90,10 +92,16 @@ const Layout: React.FC<LayoutProps> = ({
   ];
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden relative bg-gradient-to-br from-indigo-50 via-purple-50 to-slate-100">
+    <div className="flex h-[100dvh] overflow-hidden relative bg-[#f8fafc]">
+      {/* Dynamic Background Accents */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-200/20 blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-200/20 blur-[120px]"></div>
+      </div>
+
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setMobileMenuOpen(false)} />
+        <div className="fixed inset-0 z-[60] bg-slate-900/20 backdrop-blur-sm md:hidden transition-opacity" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* Sidebar */}
@@ -102,18 +110,19 @@ const Layout: React.FC<LayoutProps> = ({
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
         flex flex-col h-full p-4 shrink-0
       `}>
-        <div className="glass-panel h-full rounded-3xl flex flex-col p-6 shadow-2xl md:shadow-none border border-white/50">
-          <div className="flex items-center mb-8 px-2">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-indigo-500/30 shrink-0">
-              <Bot size={24} />
+        <div className="glass-panel h-full rounded-[2rem] flex flex-col p-6 shadow-2xl md:shadow-none border border-white/60 bg-white/60 backdrop-blur-2xl relative overflow-hidden">
+          <div className="flex items-center mb-10 px-2 relative z-10">
+            <div className="w-11 h-11 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-indigo-500/30 shrink-0">
+              <Bot size={22} />
             </div>
             <div>
-              <h1 className="font-bold text-xl tracking-tight text-slate-800">Nexus Hub</h1>
-              <p className="text-xs text-slate-500 font-medium">Local AI Assistant</p>
+              <h1 className="font-black text-xl tracking-tight text-slate-800">Nexus Hub</h1>
+              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Personal OS</p>
             </div>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar">
+          <nav className="flex-1 space-y-2 overflow-y-auto no-scrollbar relative z-10">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-3">Menu</div>
             {navItems.map((item) => (
               <SidebarItem
                 key={item.id}
@@ -128,12 +137,13 @@ const Layout: React.FC<LayoutProps> = ({
             ))}
           </nav>
 
-          <div className="mt-auto pt-6 border-t border-slate-200/50">
-            <div className="flex items-center p-3 mb-3 bg-white/40 rounded-xl">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 mr-3 flex-shrink-0"></div>
+          <div className="mt-auto pt-6 border-t border-slate-200/60 relative z-10">
+             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-3">Account</div>
+            <div className="flex items-center p-3 mb-3 bg-white/50 border border-white rounded-2xl">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-400 to-purple-400 mr-3 flex-shrink-0 shadow-sm"></div>
               <div className="flex-1 overflow-hidden">
                 <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
-                <p className="text-[10px] text-slate-500 truncate uppercase tracking-wider">Local Account</p>
+                <p className="text-[10px] text-slate-500 truncate font-medium">Local Storage</p>
               </div>
               
               {onClearCache && (
@@ -148,60 +158,79 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
             <button 
               onClick={onLogout}
-              className="flex items-center w-full p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+              className="flex items-center w-full p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors text-sm font-bold group"
             >
-              <LogOut size={18} className="mr-3" />
-              Disconnect Vault
+              <div className="p-1.5 bg-slate-100 group-hover:bg-red-100 rounded-lg mr-3 transition-colors">
+                 <LogOut size={16} />
+              </div>
+              Sign Out
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full z-10">
         {/* Header */}
-        <header className="min-h-[80px] flex items-center justify-between px-4 md:px-8 py-4 z-30 gap-3 md:gap-4 shrink-0">
+        <header className="min-h-[80px] flex items-center justify-between px-4 md:px-8 py-4 z-30 gap-4 shrink-0">
           <button 
             onClick={() => setMobileMenuOpen(true)}
-            className="md:hidden p-2.5 text-slate-600 glass-panel rounded-xl active:scale-95 transition-transform shrink-0"
+            className="md:hidden p-2.5 text-slate-600 glass-panel rounded-xl active:scale-95 transition-transform shrink-0 shadow-sm"
           >
             <Menu size={20} />
           </button>
 
           <div className="flex-1 max-w-md md:mx-4 relative min-w-0">
             <div className="relative w-full group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors duration-300 pointer-events-none">
+                 <Search size={18} />
+              </div>
               <input 
                 type="text" 
-                placeholder="Search..." 
+                placeholder="Search vault..." 
                 value={searchQuery}
                 onChange={handleSearchChange}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-sm focus:outline-none transition-all shadow-sm focus:shadow-md focus:ring-2 focus:ring-indigo-100 placeholder:text-slate-400"
+                className="w-full pl-10 pr-12 py-3 rounded-2xl bg-white/60 backdrop-blur-md border border-white/60 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all shadow-sm hover:shadow focus:shadow-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white"
                 onFocus={() => searchQuery && setShowResults(true)}
               />
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none hidden md:flex items-center gap-1">
+                <span className="text-[10px] font-bold text-slate-400 bg-white/50 px-1.5 py-0.5 rounded border border-slate-200">/</span>
+              </div>
             </div>
             
             {/* Search Results Dropdown */}
             {showResults && searchQuery && (
-              <div className="absolute top-full left-0 right-0 mt-2 glass-panel rounded-xl shadow-xl overflow-hidden max-h-80 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-full left-0 right-0 mt-3 glass-panel rounded-2xl shadow-2xl overflow-hidden max-h-80 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 border border-white/60">
                 {searchResults.length === 0 ? (
-                  <div className="p-4 text-sm text-slate-400 text-center">No results found.</div>
+                  <div className="p-8 text-center flex flex-col items-center text-slate-400">
+                    <Search size={24} className="mb-2 opacity-20" />
+                    <p className="text-sm font-medium">No matching results.</p>
+                  </div>
                 ) : (
                   <div className="py-2">
+                    <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Best Matches</div>
                     {searchResults.map((result, idx) => (
                       <button 
                         key={idx} 
-                        className="w-full text-left px-4 py-3 hover:bg-indigo-50 flex items-center justify-between group border-b border-slate-100 last:border-0"
+                        className="w-full text-left px-4 py-3 hover:bg-indigo-50/50 flex items-center justify-between group border-b border-slate-50 last:border-0 transition-colors"
                         onClick={() => handleResultClick(
                           result.type === 'link' ? 'links' : 
                           result.type === 'password' ? 'passwords' : 'calendar'
                         )}
                       >
-                        <div className="overflow-hidden">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{result.title || result.site}</p>
-                          <p className="text-xs text-slate-500 capitalize mt-0.5">{result.type}</p>
+                        <div className="flex items-center overflow-hidden">
+                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 shrink-0 ${
+                             result.type === 'link' ? 'bg-blue-100 text-blue-600' :
+                             result.type === 'password' ? 'bg-emerald-100 text-emerald-600' : 'bg-pink-100 text-pink-600'
+                           }`}>
+                             {result.type === 'link' ? <LinkIcon size={14} /> : result.type === 'password' ? <Lock size={14} /> : <Calendar size={14} />}
+                           </div>
+                          <div className="overflow-hidden">
+                            <p className="text-sm font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors">{result.title || result.site}</p>
+                            <p className="text-xs text-slate-500 capitalize mt-0.5 font-medium">{result.type}</p>
+                          </div>
                         </div>
-                        <ArrowRight size={14} className="text-indigo-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                        <ArrowRight size={16} className="text-indigo-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                       </button>
                     ))}
                   </div>
@@ -211,15 +240,18 @@ const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <button className="relative p-2.5 text-slate-600 hover:bg-white/60 rounded-full transition-colors glass-panel border-0">
+            <button className="relative p-3 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all glass-panel border-0 shadow-sm hover:shadow">
               <Bell size={20} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+              <span className="absolute top-2.5 right-3 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+             <button className="p-3 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all glass-panel border-0 shadow-sm hover:shadow hidden sm:block">
+              <Settings size={20} />
             </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8 z-0 scroll-smooth w-full">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 z-0 scroll-smooth w-full">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>

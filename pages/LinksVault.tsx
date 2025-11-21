@@ -106,7 +106,7 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
               placeholder="Filter links..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white/50 hover:bg-white/80 focus:bg-white rounded-xl text-sm transition-all outline-none border border-transparent focus:border-indigo-100 focus:shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-white/50 hover:bg-white/80 focus:bg-white rounded-xl text-sm text-slate-800 placeholder:text-slate-400 transition-all outline-none border border-transparent focus:border-indigo-100 focus:shadow-sm"
             />
           </div>
           <div className="flex-1 overflow-x-auto no-scrollbar flex gap-2 items-center pb-1 md:pb-0">
@@ -257,7 +257,7 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={() => setShowAddModal(false)} />
            
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden relative z-10 animate-in zoom-in-95 duration-300 border border-white/50">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden relative z-10 animate-in zoom-in-95 duration-300 border border-white/50 my-auto">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
               <h3 className="text-2xl font-bold relative z-10">Add Resource</h3>
@@ -341,7 +341,6 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
         </div>
       )}
       
-      {/* Helper visual: Sparkles icon for the AI note in modal */}
       <div className="hidden">
          <Sparkles />
       </div>

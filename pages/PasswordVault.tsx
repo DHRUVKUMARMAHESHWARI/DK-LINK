@@ -110,7 +110,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
                   <td className="p-3 md:p-4 text-slate-600 text-sm font-mono">{item.username}</td>
                   <td className="p-3 md:p-4">
                     <div className="flex items-center">
-                      <span className="font-mono bg-slate-100 px-2 py-1 rounded text-sm mr-2 w-32 truncate block">
+                      <span className="font-mono bg-slate-100 px-2 py-1 rounded text-sm mr-2 w-32 truncate block text-slate-800">
                         {revealedId === item.id ? item.password : '••••••••••••'}
                       </span>
                       <button 
@@ -166,14 +166,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
                   <label className="block text-xs font-medium text-slate-500 mb-1">Website Name</label>
                   <input 
                     type="text" required value={site} onChange={e => setSite(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-indigo-500"
+                    className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-indigo-500 text-slate-800"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Username / Email</label>
                   <input 
                     type="text" required value={username} onChange={e => setUsername(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-indigo-500"
+                    className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-indigo-500 text-slate-800"
                   />
                 </div>
                 <div>
@@ -181,7 +181,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
                   <div className="flex gap-2">
                     <input 
                       type="text" required value={password} onChange={e => setPassword(e.target.value)}
-                      className="flex-1 p-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-indigo-500 font-mono"
+                      className="flex-1 p-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-indigo-500 font-mono text-slate-800"
                     />
                     <button 
                       type="button" onClick={generatePassword}

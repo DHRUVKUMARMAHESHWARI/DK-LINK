@@ -173,15 +173,15 @@ const SmartCalendar: React.FC<SmartCalendarProps> = ({ events, addEvent, toggleE
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
-                  <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200" />
+                  <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-800" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Date & Time</label>
-                  <input type="datetime-local" required value={date} onChange={e => setDate(e.target.value)} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200" />
+                  <input type="datetime-local" required value={date} onChange={e => setDate(e.target.value)} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-800" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Type</label>
-                  <select value={type} onChange={e => setType(e.target.value as any)} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200">
+                  <select value={type} onChange={e => setType(e.target.value as any)} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-800">
                     <option value="Meeting">Meeting</option>
                     <option value="Deadline">Deadline</option>
                     <option value="Birthday">Birthday</option>
