@@ -184,16 +184,23 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
                 <div className="flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button 
                     onClick={(e) => { e.preventDefault(); copyToClipboard(link.url, link.id); }}
-                    className="p-2 rounded-lg hover:bg-white/80 text-slate-400 hover:text-indigo-600 transition-colors bg-white/40 backdrop-blur-sm"
-                    title="Copy URL"
+                    className="group/btn relative p-2 rounded-lg hover:bg-white/80 text-slate-400 hover:text-indigo-600 transition-colors bg-white/40 backdrop-blur-sm"
+                    aria-label="Copy URL"
                   >
                     {copiedId === link.id ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                    <span className="absolute top-full right-0 mt-2 px-2 py-1 text-[10px] font-bold text-white bg-slate-800 rounded shadow-lg opacity-0 group-hover/btn:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 translate-y-1 group-hover/btn:translate-y-0 border border-white/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+                      {copiedId === link.id ? 'Copied!' : 'Copy URL'}
+                    </span>
                   </button>
                   <button 
                     onClick={() => setLinkToDelete(link.id)} 
-                    className="p-2 rounded-lg hover:bg-white/80 text-slate-400 hover:text-red-500 transition-colors bg-white/40 backdrop-blur-sm"
+                    className="group/btn relative p-2 rounded-lg hover:bg-white/80 text-slate-400 hover:text-red-500 transition-colors bg-white/40 backdrop-blur-sm"
+                    aria-label="Delete Link"
                   >
                     <Trash2 size={16} />
+                    <span className="absolute top-full right-0 mt-2 px-2 py-1 text-[10px] font-bold text-white bg-slate-800 rounded shadow-lg opacity-0 group-hover/btn:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 translate-y-1 group-hover/btn:translate-y-0 border border-white/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
+                      Delete
+                    </span>
                   </button>
                 </div>
               </div>
@@ -268,7 +275,7 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
               <form onSubmit={handleAddLink}>
                 <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Website URL</label>
                 <div className="relative mb-8">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-100 p-1.5 rounded-md">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-100 p-1.5 rounded-md z-10">
                     <Globe size={16} className="text-slate-500" />
                   </div>
                   <input 
@@ -276,10 +283,20 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
                     required
                     autoFocus
                     placeholder="https://example.com" 
-                    className="w-full pl-14 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-800 shadow-inner"
+                    className={`w-full pl-14 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-800 shadow-inner relative z-0 ${isAnalyzing ? 'bg-indigo-50/30 border-indigo-200 cursor-not-allowed' : ''}`}
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
+                    disabled={isAnalyzing}
                   />
+                   {isAnalyzing && (
+                    <>
+                      <div className="absolute inset-0 rounded-2xl border-2 border-indigo-500/20 pointer-events-none animate-pulse z-10"></div>
+                      <div className="absolute -bottom-6 left-1 flex items-center text-xs font-semibold text-indigo-600 animate-pulse">
+                         <Sparkles size={12} className="mr-1.5" />
+                         Analyzing content & generating tags...
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="flex justify-end gap-3">
