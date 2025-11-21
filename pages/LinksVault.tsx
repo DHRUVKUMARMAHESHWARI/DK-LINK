@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { LinkItem, Category } from '../types';
 import { analyzeLink } from '../services/geminiService';
-import { ExternalLink, Trash2, Tag, Folder, Plus, Loader2, Search } from 'lucide-react';
+import { ExternalLink, Trash2, Tag, Folder, Plus, Loader2, Search, AlertTriangle } from 'lucide-react';
 
 interface LinksVaultProps {
   links: LinkItem[];
@@ -15,6 +16,9 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [filter, setFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  
+  // Delete Confirmation State
+  const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
 
   const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +43,13 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
     setIsAnalyzing(false);
     setShowAddModal(false);
     setNewUrl('');
+  };
+
+  const confirmDelete = () => {
+    if (linkToDelete) {
+      deleteLink(linkToDelete);
+      setLinkToDelete(null);
+    }
   };
 
   const filteredLinks = links.filter(link => {
@@ -104,7 +115,7 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
               }>
                 {link.category}
               </div>
-              <button onClick={() => deleteLink(link.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+              <button onClick={() => setLinkToDelete(link.id)} className="text-slate-300 hover:text-red-400 transition-colors">
                 <Trash2 size={16} />
               </button>
             </div>
@@ -131,10 +142,10 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
         )}
       </div>
 
-      {/* Modal */}
+      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6">
               <h3 className="text-xl font-bold text-slate-800 mb-4">Add New Resource</h3>
               <form onSubmit={handleAddLink}>
@@ -168,6 +179,37 @@ const LinksVault: React.FC<LinksVaultProps> = ({ links, addLink, deleteLink }) =
             </div>
             <div className="bg-slate-50 px-6 py-3 text-xs text-slate-500 border-t border-slate-100">
               Powered by Gemini. The URL will be sent to Google for analysis.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {linkToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Link?</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Are you sure you want to remove this link? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setLinkToDelete(null)}
+                  className="flex-1 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { CalendarEvent } from '../types';
 import { parseNaturalLanguageEvent } from '../services/geminiService';
-import { Plus, CheckCircle2, Circle, Calendar as CalendarIcon, Clock, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Calendar as CalendarIcon, Clock, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 
 interface SmartCalendarProps {
   events: CalendarEvent[];
@@ -15,6 +16,9 @@ const SmartCalendar: React.FC<SmartCalendarProps> = ({ events, addEvent, toggleE
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [type, setType] = useState<CalendarEvent['type']>('Reminder');
+  
+  // Delete Confirmation State
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   
   // AI Quick Add State
   const [aiInput, setAiInput] = useState('');
@@ -55,6 +59,13 @@ const SmartCalendar: React.FC<SmartCalendarProps> = ({ events, addEvent, toggleE
       alert("Could not understand the event. Please try again or use manual add.");
     }
     setIsAiProcessing(false);
+  };
+
+  const confirmDelete = () => {
+    if (eventToDelete) {
+      deleteEvent(eventToDelete);
+      setEventToDelete(null);
+    }
   };
 
   // Group by Date
@@ -140,7 +151,7 @@ const SmartCalendar: React.FC<SmartCalendarProps> = ({ events, addEvent, toggleE
                   </div>
                   
                   <button 
-                    onClick={() => deleteEvent(event.id)}
+                    onClick={() => setEventToDelete(event.id)}
                     className="text-slate-300 hover:text-red-400 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     Remove
@@ -155,7 +166,7 @@ const SmartCalendar: React.FC<SmartCalendarProps> = ({ events, addEvent, toggleE
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold text-slate-800 mb-4">Add New Event</h3>
             <form onSubmit={handleAdd}>
               <div className="space-y-4">
@@ -182,6 +193,37 @@ const SmartCalendar: React.FC<SmartCalendarProps> = ({ events, addEvent, toggleE
                 <button type="submit" className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg">Add to Schedule</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {eventToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Event?</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Are you sure you want to remove this event from your schedule?
+              </p>
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setEventToDelete(null)}
+                  className="flex-1 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

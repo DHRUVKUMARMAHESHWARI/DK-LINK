@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { PasswordItem, Category } from '../types';
-import { Copy, Eye, EyeOff, ShieldAlert, ShieldCheck, Plus, Trash2, Key, Check } from 'lucide-react';
+import { Copy, Eye, EyeOff, ShieldAlert, ShieldCheck, Plus, Trash2, Key, Check, AlertTriangle } from 'lucide-react';
 
 interface PasswordVaultProps {
   passwords: PasswordItem[];
@@ -13,6 +14,9 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
   const [showModal, setShowModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
+  // Delete Confirmation State
+  const [passwordToDelete, setPasswordToDelete] = useState<string | null>(null);
+
   // Form state
   const [site, setSite] = useState('');
   const [username, setUsername] = useState('');
@@ -48,6 +52,13 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
     });
     setShowModal(false);
     setSite(''); setUsername(''); setPassword('');
+  };
+
+  const confirmDelete = () => {
+    if (passwordToDelete) {
+      deletePassword(passwordToDelete);
+      setPasswordToDelete(null);
+    }
   };
 
   const copyToClipboard = (id: string, text: string) => {
@@ -125,7 +136,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
                   >
                     {copiedId === item.id ? <Check size={16} /> : <Copy size={16} />}
                   </button>
-                  <button onClick={() => deletePassword(item.id)} className="text-slate-400 hover:text-red-500" title="Delete">
+                  <button onClick={() => setPasswordToDelete(item.id)} className="text-slate-400 hover:text-red-500" title="Delete">
                     <Trash2 size={16} />
                   </button>
                 </td>
@@ -144,7 +155,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
       {/* Add Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold text-slate-800 mb-4">Add Secure Credential</h3>
             <form onSubmit={handleSave}>
               <div className="space-y-4">
@@ -183,6 +194,37 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ passwords, addPassword, d
                 <button type="submit" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Save Securely</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {passwordToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Credential?</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Are you sure you want to delete this password? This action cannot be recovered.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setPasswordToDelete(null)}
+                  className="flex-1 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
