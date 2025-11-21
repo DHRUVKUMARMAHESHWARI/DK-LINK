@@ -31,10 +31,15 @@ const auth = async (req, res, next) => {
 };
 
 // --- Database Connection ---
-mongoose.connect(process.env.MONGO_URL)
+// Using the specific variable requested by user
+mongoose.connect(process.env.Mongourl)
   .then(() => console.log('Connected to MongoDB Atlas'))
   .catch(err => console.error('Could not connect to MongoDB:', err));
 
+// --- Health Check ---
+app.get('/', (req, res) => {
+  res.send('Nexus Backend is Running');
+});
 
 // --- Routes: Auth ---
 

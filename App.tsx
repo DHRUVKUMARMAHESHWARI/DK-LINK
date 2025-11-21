@@ -142,9 +142,13 @@ const App: React.FC = () => {
   const addLink = async (link: LinkItem) => {
     if (!user) return;
     const linkWithUser = { ...link, userId: user.id };
-    await api.addLink(linkWithUser);
-    setLinks(prev => [linkWithUser, ...prev]);
-    showToast('Link saved to vault');
+    try {
+      const newLink = await api.addLink(linkWithUser);
+      setLinks(prev => [newLink, ...prev]);
+      showToast('Link saved to vault');
+    } catch (error) {
+      showToast('Failed to save link');
+    }
   };
   
   const deleteLink = async (id: string) => {
@@ -157,9 +161,13 @@ const App: React.FC = () => {
   const addPassword = async (pass: PasswordItem) => {
     if (!user) return;
     const passWithUser = { ...pass, userId: user.id };
-    await api.addPassword(passWithUser);
-    setPasswords(prev => [passWithUser, ...prev]);
-    showToast('Password securely saved');
+    try {
+      const newPass = await api.addPassword(passWithUser);
+      setPasswords(prev => [newPass, ...prev]);
+      showToast('Password securely saved');
+    } catch (error) {
+      showToast('Failed to save password');
+    }
   };
 
   const deletePassword = async (id: string) => {
@@ -172,9 +180,13 @@ const App: React.FC = () => {
   const addEvent = async (event: CalendarEvent) => {
     if (!user) return;
     const eventWithUser = { ...event, userId: user.id };
-    await api.addEvent(eventWithUser);
-    setEvents(prev => [eventWithUser, ...prev]);
-    showToast('Event added to calendar');
+    try {
+      const newEvent = await api.addEvent(eventWithUser);
+      setEvents(prev => [newEvent, ...prev]);
+      showToast('Event added to calendar');
+    } catch (error) {
+      showToast('Failed to add event');
+    }
   };
 
   const toggleEvent = async (id: string) => {
@@ -182,8 +194,12 @@ const App: React.FC = () => {
     const event = events.find(e => e.id === id);
     if (event) {
       const updated = { ...event, completed: !event.completed };
-      await api.updateEvent(updated);
-      setEvents(prev => prev.map(e => e.id === id ? updated : e));
+      try {
+        await api.updateEvent(updated);
+        setEvents(prev => prev.map(e => e.id === id ? updated : e));
+      } catch (error) {
+        showToast('Failed to update event');
+      }
     }
   };
 
@@ -273,7 +289,7 @@ const App: React.FC = () => {
             </button>
           </form>
           <p className="text-center mt-6 text-xs text-slate-400">
-            Secure LocalStorage Encryption • Powered by Gemini AI
+            Secure Cloud Encryption • Powered by Gemini AI
           </p>
         </div>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
