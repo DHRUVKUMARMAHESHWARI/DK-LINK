@@ -7,14 +7,14 @@ import PasswordVault from './pages/PasswordVault';
 import SmartCalendar from './pages/SmartCalendar';
 import AiAssistant from './pages/AiAssistant';
 import { View, User, LinkItem, PasswordItem, CalendarEvent } from './types';
-import { X, Loader2, Lock, UserPlus, LogIn } from 'lucide-react';
+import { X, Loader2, Lock, UserPlus, LogIn, Smartphone, Laptop } from 'lucide-react';
 import { api } from './services/api';
 
 // Toast Component
 const Toast = ({ message, onClose }: { message: string, onClose: () => void }) => (
-  <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center animate-in slide-in-from-bottom-5 z-[100]">
-    <span>{message}</span>
-    <button onClick={onClose} className="ml-4 text-slate-400 hover:text-white">
+  <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center animate-in slide-in-from-bottom-5 z-[100] max-w-xs md:max-w-md border border-slate-700">
+    <span className="text-sm font-medium">{message}</span>
+    <button onClick={onClose} className="ml-4 text-slate-400 hover:text-white transition-colors">
       <X size={16} />
     </button>
   </div>
@@ -75,8 +75,14 @@ const App: React.FC = () => {
       setLinks(fetchedLinks);
       setPasswords(fetchedPasswords);
       setEvents(fetchedEvents);
+
+      // Run Auto-Cleanup for unused AI data/chats
+      const freed = await api.cleanupStorage(user.id);
+      if (freed > 0) {
+        console.log(`Auto-cleanup removed ${freed} old items.`);
+      }
     } catch (error) {
-      showToast("Failed to load data from vault");
+      showToast("Failed to load data from local storage");
     } finally {
       setIsLoadingData(false);
     }
@@ -85,7 +91,7 @@ const App: React.FC = () => {
   // Auto-hide toast
   useEffect(() => {
     if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
+      const timer = setTimeout(() => setToast(null), 4000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
@@ -102,7 +108,7 @@ const App: React.FC = () => {
       if (authMode === 'register') {
         if (!name) throw new Error("Name is required");
         authUser = await api.register(email, password, name);
-        showToast("Account created successfully!");
+        showToast("Local account created successfully!");
       } else {
         authUser = await api.login(email, password);
         showToast(`Welcome back, ${authUser.name}`);
@@ -123,6 +129,19 @@ const App: React.FC = () => {
     setName('');
   };
 
+  const handleClearCache = async () => {
+    if (!user) return;
+    if (window.confirm('Clear all AI chat history to free up space? Your saved links and passwords will remain safe.')) {
+       await api.cleanupStorage(user.id, true);
+       // Force reload view if currently on assistant to refresh UI
+       if (currentView === 'assistant') {
+         setCurrentView('dashboard');
+         setTimeout(() => setCurrentView('assistant'), 10);
+       }
+       showToast('AI cache and chat history cleared.');
+    }
+  };
+
   // Global Search Handler
   const handleGlobalSearch = (query: string) => {
     if (!query.trim()) {
@@ -138,54 +157,59 @@ const App: React.FC = () => {
     setSearchResults([...matchedLinks, ...matchedPasswords, ...matchedEvents]);
   };
 
-  // Data Actions
+  // Data Actions - Wrapped in try/catch for storage quotas
   const addLink = async (link: LinkItem) => {
     if (!user) return;
-    const linkWithUser = { ...link, userId: user.id };
     try {
-      const newLink = await api.addLink(linkWithUser);
+      const newLink = await api.addLink({ ...link, userId: user.id });
       setLinks(prev => [newLink, ...prev]);
-      showToast('Link saved to vault');
-    } catch (error) {
-      showToast('Failed to save link');
+      showToast('Link saved locally');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to save link');
     }
   };
   
   const deleteLink = async (id: string) => {
     if (!user) return;
-    await api.deleteLink(id, user.id);
-    setLinks(prev => prev.filter(l => l.id !== id));
-    showToast('Link removed');
+    try {
+      await api.deleteLink(id, user.id);
+      setLinks(prev => prev.filter(l => l.id !== id));
+      showToast('Link removed');
+    } catch (error: any) {
+      showToast(error.message);
+    }
   };
 
   const addPassword = async (pass: PasswordItem) => {
     if (!user) return;
-    const passWithUser = { ...pass, userId: user.id };
     try {
-      const newPass = await api.addPassword(passWithUser);
+      const newPass = await api.addPassword({ ...pass, userId: user.id });
       setPasswords(prev => [newPass, ...prev]);
-      showToast('Password securely saved');
-    } catch (error) {
-      showToast('Failed to save password');
+      showToast('Password saved securely to device');
+    } catch (error: any) {
+      showToast(error.message || 'Storage error');
     }
   };
 
   const deletePassword = async (id: string) => {
     if (!user) return;
-    await api.deletePassword(id, user.id);
-    setPasswords(prev => prev.filter(p => p.id !== id));
-    showToast('Password entry deleted');
+    try {
+      await api.deletePassword(id, user.id);
+      setPasswords(prev => prev.filter(p => p.id !== id));
+      showToast('Password deleted');
+    } catch (error: any) {
+      showToast(error.message);
+    }
   };
 
   const addEvent = async (event: CalendarEvent) => {
     if (!user) return;
-    const eventWithUser = { ...event, userId: user.id };
     try {
-      const newEvent = await api.addEvent(eventWithUser);
+      const newEvent = await api.addEvent({ ...event, userId: user.id });
       setEvents(prev => [newEvent, ...prev]);
       showToast('Event added to calendar');
-    } catch (error) {
-      showToast('Failed to add event');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to add event');
     }
   };
 
@@ -193,21 +217,25 @@ const App: React.FC = () => {
     if (!user) return;
     const event = events.find(e => e.id === id);
     if (event) {
-      const updated = { ...event, completed: !event.completed };
       try {
+        const updated = { ...event, completed: !event.completed };
         await api.updateEvent(updated);
         setEvents(prev => prev.map(e => e.id === id ? updated : e));
-      } catch (error) {
-        showToast('Failed to update event');
+      } catch (error: any) {
+        showToast(error.message || 'Update failed');
       }
     }
   };
 
   const deleteEvent = async (id: string) => {
     if (!user) return;
-    await api.deleteEvent(id, user.id);
-    setEvents(prev => prev.filter(e => e.id !== id));
-    showToast('Event removed');
+    try {
+      await api.deleteEvent(id, user.id);
+      setEvents(prev => prev.filter(e => e.id !== id));
+      showToast('Event removed');
+    } catch (error: any) {
+      showToast(error.message);
+    }
   };
 
   if (!user) {
@@ -219,7 +247,10 @@ const App: React.FC = () => {
                <Lock size={32} />
             </div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">Nexus Hub</h1>
-            <p className="text-slate-500">Your AI-Powered Digital Command Center</p>
+            <p className="text-slate-500 text-sm">
+              Your offline-first digital brain. <br/>
+              Data stays on your device.
+            </p>
           </div>
           
           <div className="flex mb-6 bg-white/50 p-1 rounded-xl">
@@ -233,7 +264,7 @@ const App: React.FC = () => {
               onClick={() => setAuthMode('register')}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${authMode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-              Sign Up
+              Create Profile
             </button>
           </div>
 
@@ -257,7 +288,7 @@ const App: React.FC = () => {
                 type="email" 
                 required 
                 className="w-full p-3 rounded-xl bg-white/50 border border-slate-200 focus:border-indigo-500 focus:outline-none transition-colors"
-                placeholder="you@example.com"
+                placeholder="you@device.local"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
@@ -283,14 +314,22 @@ const App: React.FC = () => {
               ) : (
                 <>
                   {authMode === 'login' ? <LogIn size={18} className="mr-2" /> : <UserPlus size={18} className="mr-2" />}
-                  {authMode === 'login' ? 'Enter Hub' : 'Create Account'}
+                  {authMode === 'login' ? 'Open Vault' : 'Initialize Vault'}
                 </>
               )}
             </button>
           </form>
-          <p className="text-center mt-6 text-xs text-slate-400">
-            Secure Cloud Encryption • Powered by Gemini AI
-          </p>
+          
+          <div className="flex justify-center gap-4 mt-8 opacity-50">
+            <div className="flex flex-col items-center">
+              <Smartphone size={16} className="mb-1" />
+              <span className="text-[10px] font-medium uppercase">Mobile</span>
+            </div>
+             <div className="flex flex-col items-center">
+              <Laptop size={16} className="mb-1" />
+              <span className="text-[10px] font-medium uppercase">Desktop</span>
+            </div>
+          </div>
         </div>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </div>
@@ -305,12 +344,13 @@ const App: React.FC = () => {
       onLogout={handleLogout}
       onSearch={handleGlobalSearch}
       searchResults={searchResults}
+      onClearCache={handleClearCache}
     >
       {isLoadingData ? (
         <div className="flex items-center justify-center h-[60vh]">
            <div className="flex flex-col items-center">
              <Loader2 size={40} className="text-indigo-500 animate-spin mb-4" />
-             <p className="text-slate-500 font-medium">Decrypting Vault...</p>
+             <p className="text-slate-500 font-medium">Loading Local Storage...</p>
            </div>
         </div>
       ) : (
@@ -348,6 +388,7 @@ const App: React.FC = () => {
           {currentView === 'assistant' && (
             <AiAssistant 
               contextData={{ links, passwords, events }} 
+              userId={user.id}
             />
           )}
         </>

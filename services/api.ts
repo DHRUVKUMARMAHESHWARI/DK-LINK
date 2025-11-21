@@ -1,157 +1,165 @@
 
-import { User, LinkItem, PasswordItem, CalendarEvent } from '../types';
+import { User, LinkItem, PasswordItem, CalendarEvent, ChatMessage } from '../types';
 
-// API Configuration
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const SIMULATED_DELAY = 400;
 
-// Helper: Get Auth Headers
-const getHeaders = () => {
-  const token = localStorage.getItem('nexus_token');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : ''
-  };
+const delay = () => new Promise(resolve => setTimeout(resolve, SIMULATED_DELAY));
+
+// Helper to safely write to localStorage with Quota error handling
+const safeSetItem = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e: any) {
+    if (
+      e.name === 'QuotaExceededError' || 
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || 
+      e.message?.toLowerCase().includes('quota')
+    ) {
+      throw new Error("⚠️ Storage Full! Please delete old items to save new data.");
+    }
+    throw e;
+  }
 };
 
-// Helper: Handle Response
-const handleResponse = async (response: Response) => {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-    if (response.status === 401) {
-      // Auto logout on unauthorized
-      localStorage.removeItem('nexus_token');
-      localStorage.removeItem('nexus_active_user');
-      window.location.href = '/';
-    }
-    throw new Error(error.message || `Request failed: ${response.statusText}`);
+const getData = <T>(key: string): T[] => {
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : [];
+};
+
+// Internal helpers extracted to avoid 'this' context issues with generics
+const _add = async <T extends { id: string }>(collectionKey: string, item: T, userId: string): Promise<T> => {
+  await delay();
+  const key = `nexus_${collectionKey}_${userId}`;
+  const items = getData<T>(key);
+  
+  // Assign a local ID if not present or generic
+  const newItem = { ...item, id: Date.now().toString() };
+  
+  items.unshift(newItem); // Add to top
+  safeSetItem(key, JSON.stringify(items));
+  return newItem;
+};
+
+const _get = async <T>(collectionKey: string, userId: string): Promise<T[]> => {
+  await delay();
+  return getData<T>(`nexus_${collectionKey}_${userId}`);
+};
+
+const _delete = async (collectionKey: string, id: string, userId: string): Promise<void> => {
+  await delay();
+  const key = `nexus_${collectionKey}_${userId}`;
+  const items = getData<any>(key);
+  const filtered = items.filter((i: any) => i.id !== id);
+  safeSetItem(key, JSON.stringify(filtered));
+};
+
+const _update = async <T extends { id: string }>(collectionKey: string, item: T, userId: string): Promise<void> => {
+  await delay();
+  const key = `nexus_${collectionKey}_${userId}`;
+  const items = getData<any>(key);
+  const index = items.findIndex((i: any) => i.id === item.id);
+  if (index !== -1) {
+    items[index] = item;
+    safeSetItem(key, JSON.stringify(items));
   }
-  return response.json();
 };
 
 export const api = {
-  // --- AUTHENTICATION ---
+  // --- AUTHENTICATION (Simulated) ---
 
   async register(email: string, password: string, name: string): Promise<User> {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
+    await delay();
+    const users = getData<any>('nexus_users');
     
-    const data = await handleResponse(response);
+    if (users.find(u => u.email === email)) {
+      throw new Error('User already exists');
+    }
     
-    // Save Session
-    localStorage.setItem('nexus_token', data.token);
-    return data.user;
+    const newUser = {
+      id: 'user_' + Date.now(),
+      email,
+      password, // In a real local-only app, this is stored in LS.
+      name,
+      isAuthenticated: true
+    };
+    
+    users.push(newUser);
+    safeSetItem('nexus_users', JSON.stringify(users));
+    
+    const { password: _, ...userSafe } = newUser;
+    return userSafe;
   },
 
   async login(email: string, password: string): Promise<User> {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await handleResponse(response);
+    await delay();
+    const users = getData<any>('nexus_users');
+    const user = users.find(u => u.email === email && u.password === password);
     
-    // Save Session
-    localStorage.setItem('nexus_token', data.token);
-    return data.user;
+    if (!user) throw new Error('Invalid credentials');
+    
+    const { password: _, ...userSafe } = user;
+    return userSafe;
   },
 
   // --- LINKS ---
-
-  async getLinks(userId: string): Promise<LinkItem[]> {
-    const response = await fetch(`${API_URL}/links`, {
-      headers: getHeaders()
-    });
-    const data = await handleResponse(response);
-    // Map MongoDB _id to id
-    return data.map((item: any) => ({ ...item, id: item._id }));
-  },
-
-  async addLink(link: LinkItem): Promise<LinkItem> {
-    // Remove ID if it exists (let MongoDB generate it)
-    const { id, ...linkData } = link; 
-    const response = await fetch(`${API_URL}/links`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(linkData),
-    });
-    const data = await handleResponse(response);
-    return { ...data, id: data._id };
-  },
-
-  async deleteLink(id: string, userId: string): Promise<void> {
-    await fetch(`${API_URL}/links/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    });
-  },
+  async getLinks(userId: string) { return _get<LinkItem>('links', userId); },
+  async addLink(link: LinkItem) { return _add('links', link, link.userId); },
+  async deleteLink(id: string, userId: string) { return _delete('links', id, userId); },
 
   // --- PASSWORDS ---
-
-  async getPasswords(userId: string): Promise<PasswordItem[]> {
-    const response = await fetch(`${API_URL}/passwords`, {
-      headers: getHeaders()
-    });
-    const data = await handleResponse(response);
-    return data.map((item: any) => ({ ...item, id: item._id }));
-  },
-
-  async addPassword(pass: PasswordItem): Promise<PasswordItem> {
-    const { id, ...passData } = pass;
-    const response = await fetch(`${API_URL}/passwords`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(passData),
-    });
-    const data = await handleResponse(response);
-    return { ...data, id: data._id };
-  },
-
-  async deletePassword(id: string, userId: string): Promise<void> {
-    await fetch(`${API_URL}/passwords/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    });
-  },
+  async getPasswords(userId: string) { return _get<PasswordItem>('passwords', userId); },
+  async addPassword(pass: PasswordItem) { return _add('passwords', pass, pass.userId); },
+  async deletePassword(id: string, userId: string) { return _delete('passwords', id, userId); },
 
   // --- EVENTS ---
+  async getEvents(userId: string) { return _get<CalendarEvent>('events', userId); },
+  async addEvent(event: CalendarEvent) { return _add('events', event, event.userId); },
+  async updateEvent(event: CalendarEvent) { return _update('events', event, event.userId); },
+  async deleteEvent(id: string, userId: string) { return _delete('events', id, userId); },
 
-  async getEvents(userId: string): Promise<CalendarEvent[]> {
-    const response = await fetch(`${API_URL}/events`, {
-      headers: getHeaders()
-    });
-    const data = await handleResponse(response);
-    return data.map((item: any) => ({ ...item, id: item._id }));
+  // --- CHATS ---
+  async getChats(userId: string) {
+    const chats = await _get<ChatMessage>('chats', userId);
+    // Sort chronological for display (oldest to newest)
+    return chats.sort((a, b) => a.timestamp - b.timestamp); 
   },
-
-  async addEvent(event: CalendarEvent): Promise<CalendarEvent> {
-    const { id, ...eventData } = event;
-    const response = await fetch(`${API_URL}/events`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(eventData),
-    });
-    const data = await handleResponse(response);
-    return { ...data, id: data._id };
+  async addChat(chat: ChatMessage, userId: string) {
+    return _add('chats', chat, userId);
   },
+  
+  // --- STORAGE MANAGEMENT ---
+  /**
+   * Cleans up unnecessary data to free space:
+   * 1. Removes chat messages older than 24 hours
+   * 2. Keeps a maximum of 50 recent messages
+   */
+  async cleanupStorage(userId: string, forceAll: boolean = false): Promise<number> {
+    const key = `nexus_chats_${userId}`;
+    
+    if (forceAll) {
+      safeSetItem(key, JSON.stringify([]));
+      return 1; // Generic success indicator
+    }
 
-  async updateEvent(event: CalendarEvent): Promise<void> {
-    const { id, ...eventData } = event;
-    // If id matches MongoDB format use it, otherwise API might fail if using temp ID
-    await fetch(`${API_URL}/events/${id}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(eventData),
-    });
-  },
+    const chats = getData<ChatMessage>(key);
+    const initialCount = chats.length;
 
-  async deleteEvent(id: string, userId: string): Promise<void> {
-    await fetch(`${API_URL}/events/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    });
+    // Retention Policy: 24 Hours
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    let keptChats = chats.filter(c => c.timestamp > oneDayAgo);
+
+    // Cap Policy: Max 50 messages
+    if (keptChats.length > 50) {
+      // Keep the 50 most recent (since they are stored in 'unshift' order in _add, 
+      // index 0 is newest. So slice(0, 50) keeps newest)
+      keptChats = keptChats.slice(0, 50);
+    }
+
+    if (keptChats.length !== initialCount) {
+      safeSetItem(key, JSON.stringify(keptChats));
+      console.log(`[Storage] Cleaned up ${initialCount - keptChats.length} old messages`);
+      return initialCount - keptChats.length;
+    }
+    return 0;
   }
 };

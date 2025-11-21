@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage, LinkItem, PasswordItem, CalendarEvent } from '../types';
 import { chatWithAI } from '../services/geminiService';
+import { api } from '../services/api';
 import { Send, Bot, User as UserIcon, Sparkles, Loader2 } from 'lucide-react';
 
 interface AiAssistantProps {
@@ -9,20 +11,37 @@ interface AiAssistantProps {
     passwords: PasswordItem[];
     events: CalendarEvent[];
   };
+  userId: string;
 }
 
-const AiAssistant: React.FC<AiAssistantProps> = ({ contextData }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'model',
-      text: "Hello! I'm Nexus, your personal AI assistant. I have access to your links, safe-guarded password metadata, and schedule. How can I help you organize your life today?",
-      timestamp: Date.now()
-    }
-  ]);
+const AiAssistant: React.FC<AiAssistantProps> = ({ contextData, userId }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load persistent history
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const history = await api.getChats(userId);
+        if (history.length > 0) {
+          setMessages(history);
+        } else {
+           // Set welcome message only if history is empty
+           setMessages([{
+            id: 'welcome',
+            role: 'model',
+            text: "Hello! I'm Nexus, your personal AI assistant. I have access to your links, safe-guarded password metadata, and schedule. How can I help you organize your life today?",
+            timestamp: Date.now()
+          }]);
+        }
+      } catch (e) {
+        console.error("Failed to load chat history", e);
+      }
+    };
+    loadHistory();
+  }, [userId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,6 +65,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ contextData }) => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+    
+    // Persist user message
+    api.addChat(userMsg, userId).catch(e => console.error("Failed to save chat", e));
 
     // Prepare context string
     const contextString = `
@@ -65,6 +87,9 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ contextData }) => {
 
     setMessages(prev => [...prev, aiMsg]);
     setIsLoading(false);
+    
+    // Persist AI message
+    api.addChat(aiMsg, userId).catch(e => console.error("Failed to save chat", e));
   };
 
   return (
@@ -75,7 +100,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ contextData }) => {
         </div>
         <div>
           <h3 className="font-bold">Nexus AI Chat</h3>
-          <p className="text-xs text-indigo-200">Powered by Gemini 2.5</p>
+          <p className="text-xs text-indigo-200">Powered by Gemini 2.5 • Auto-clears daily</p>
         </div>
       </div>
 
